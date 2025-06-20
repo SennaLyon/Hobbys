@@ -1,0 +1,435 @@
+/* 克苏鲁神话百科全局样式 */
+
+/* 基础样式 */
+body {
+    font-family: 'Times New Roman', Times, serif;
+    background-color: #050505;
+    color: #a3a3a3;
+    margin: 0;
+    padding: 0;
+    background-image: url('../images/background.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* 添加诡异的背景效果 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(5, 30, 15, 0.7) 0%, rgba(5, 10, 15, 0.9) 100%);
+    z-index: -1;
+}
+
+/* 添加微妙的噪点效果 */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/png;base64,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');
+    opacity: 0.03;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* 容器样式 */
+.container {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: rgba(5, 5, 5, 0.85);
+    box-shadow: 0 0 20px rgba(0, 100, 0, 0.3);
+    min-height: 100vh;
+    position: relative;
+    border-left: 1px solid rgba(42, 98, 61, 0.3);
+    border-right: 1px solid rgba(42, 98, 61, 0.3);
+}
+
+/* 添加神秘符文效果 */
+.container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" stroke="%232a623d" stroke-width="1" fill="none" opacity="0.1"/><path d="M50,10 L50,90 M10,50 L90,50 M25,25 L75,75 M25,75 L75,25" stroke="%232a623d" stroke-width="1" opacity="0.1"/></svg>');
+    background-size: 200px 200px;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* 标题样式 */
+header {
+    text-align: center;
+    padding: 20px 0;
+    border-bottom: 1px solid #2a623d;
+    position: relative;
+}
+
+header::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(42, 98, 61, 0.5), transparent);
+}
+
+h1 {
+    color: #2a623d;
+    font-size: 3em;
+    margin: 0;
+    text-shadow: 2px 2px 4px #000, 0 0 10px rgba(42, 98, 61, 0.3);
+    letter-spacing: 2px;
+    font-variant: small-caps;
+    position: relative;
+    display: inline-block;
+}
+
+h1::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #2a623d, transparent);
+    transform: scaleX(0.8);
+}
+
+/* 导航样式 */
+nav {
+    background-color: rgba(10, 10, 10, 0.9);
+    padding: 10px 0;
+    text-align: center;
+    border-bottom: 1px solid rgba(42, 98, 61, 0.3);
+    position: relative;
+}
+
+nav::before, nav::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 1px;
+}
+
+nav::before {
+    top: 0;
+    background: linear-gradient(to right, transparent, rgba(42, 98, 61, 0.2), transparent);
+}
+
+nav::after {
+    bottom: 0;
+    background: linear-gradient(to right, transparent, rgba(42, 98, 61, 0.2), transparent);
+}
+
+nav a {
+    color: #2a623d;
+    text-decoration: none;
+    padding: 10px 20px;
+    margin: 0 5px;
+    font-size: 1.2em;
+    transition: all 0.4s ease;
+    display: inline-block;
+    position: relative;
+    letter-spacing: 1px;
+}
+
+nav a::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background-color: #2a623d;
+    transition: all 0.4s ease;
+    transform: translateX(-50%);
+}
+
+nav a:hover {
+    background-color: rgba(42, 98, 61, 0.2);
+    color: #a3a3a3;
+    transform: translateY(-2px);
+    text-shadow: 0 0 5px rgba(42, 98, 61, 0.5);
+}
+
+nav a:hover::before {
+    width: 80%;
+}
+
+/* 内容区域样式 */
+.main-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20px 0;
+}
+
+/* 引用样式 */
+.quote {
+    font-style: italic;
+    border-left: 3px solid #2a623d;
+    padding-left: 20px;
+    margin: 20px 0;
+    position: relative;
+    background-color: rgba(10, 10, 10, 0.5);
+    padding: 15px 20px;
+}
+
+.quote::before {
+    content: '"';
+    position: absolute;
+    top: 0;
+    left: 5px;
+    font-size: 2em;
+    color: rgba(42, 98, 61, 0.5);
+}
+
+.quote::after {
+    content: '"';
+    position: absolute;
+    bottom: 0;
+    right: 5px;
+    font-size: 2em;
+    color: rgba(42, 98, 61, 0.5);
+}
+
+/* 卡片样式 */
+.card, .entity, .creature, .location, .book, .work, .category {
+    background-color: rgba(17, 17, 17, 0.7);
+    margin-bottom: 20px;
+    padding: 15px;
+    border-left: 3px solid #2a623d;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before, .entity::before, .creature::before, .location::before, .book::before, .work::before, .category::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,20 L80,20 L80,80 L20,80 Z" stroke="%232a623d" stroke-width="1" fill="none" opacity="0.05"/></svg>');
+    background-size: 100px 100px;
+    opacity: 0.05;
+    pointer-events: none;
+}
+
+.card:hover, .entity:hover, .creature:hover, .location:hover, .book:hover, .work:hover, .category:hover {
+    transform: translateX(5px);
+    box-shadow: 0 0 15px rgba(42, 98, 61, 0.3);
+    background-color: rgba(20, 20, 20, 0.8);
+}
+
+/* 标题样式 */
+h2, h3, h4 {
+    color: #2a623d;
+    position: relative;
+    display: inline-block;
+    text-shadow: 1px 1px 3px #000;
+}
+
+h2::after, h3::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(42, 98, 61, 0.5), transparent);
+    transform: scaleX(0.7);
+}
+
+/* 链接样式 */
+a {
+    color: #2a623d;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+a:hover {
+    color: #a3a3a3;
+    text-shadow: 0 0 5px rgba(42, 98, 61, 0.5);
+}
+
+/* 外部链接样式 */
+.external-link {
+    font-size: 0.8em;
+    margin-left: 5px;
+    padding: 2px 5px;
+    background-color: rgba(42, 98, 61, 0.2);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.external-link:hover {
+    background-color: rgba(42, 98, 61, 0.5);
+    transform: scale(1.1);
+}
+
+/* 页脚样式 */
+footer {
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid #2a623d;
+    font-size: 0.9em;
+    position: relative;
+}
+
+footer::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(42, 98, 61, 0.5), transparent);
+}
+
+/* 返回顶部按钮 */
+.back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(42, 98, 61, 0.7);
+    color: #000;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    z-index: 100;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.back-to-top:hover {
+    background-color: #1a522d;
+    transform: scale(1.05) translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.7);
+}
+
+/* 警告框样式 */
+.warning {
+    background-color: rgba(139, 0, 0, 0.3);
+    border: 1px solid #8b0000;
+    padding: 15px;
+    margin: 20px 0;
+    font-style: italic;
+    position: relative;
+}
+
+.warning::before {
+    content: '⚠';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 1.5em;
+    color: rgba(139, 0, 0, 0.7);
+}
+
+/* 添加诡异的文字效果 */
+@keyframes textShadowPulse {
+    0% { text-shadow: 0 0 5px rgba(42, 98, 61, 0.1); }
+    50% { text-shadow: 0 0 10px rgba(42, 98, 61, 0.3); }
+    100% { text-shadow: 0 0 5px rgba(42, 98, 61, 0.1); }
+}
+
+h1, h2, h3 {
+    animation: textShadowPulse 5s infinite;
+}
+
+/* 添加微妙的悬停效果 */
+.card:hover h3, .entity:hover h2, .creature:hover h2, .location:hover h2, .book:hover h2, .work:hover h3, .category:hover h2 {
+    color: #3a724d;
+    text-shadow: 0 0 8px rgba(42, 98, 61, 0.5);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+    }
+    
+    nav a {
+        padding: 8px 12px;
+        font-size: 1em;
+    }
+    
+    h1 {
+        font-size: 2.5em;
+    }
+}
+
+/* 添加诡异的图像效果 */
+img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #2a623d;
+    filter: sepia(20%) hue-rotate(120deg) brightness(90%);
+    transition: all 0.5s ease;
+}
+
+img:hover {
+    filter: sepia(10%) hue-rotate(100deg) brightness(100%);
+    box-shadow: 0 0 15px rgba(42, 98, 61, 0.5);
+}
+
+/* 添加神秘符文装饰 */
+.entity-header, .creature-header, .location-header, .book-header {
+    position: relative;
+}
+
+.entity-header::after, .creature-header::after, .location-header::after, .book-header::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(42, 98, 61, 0.3), transparent);
+}
+
+/* 添加微妙的动画效果 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.main-content > * {
+    animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2a623d;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #1a522d;
+}
