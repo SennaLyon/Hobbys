@@ -1,0 +1,604 @@
+; ============================================
+; ABM FOR SOCIAL-ECONOMIC BENEFIT EVALUATION
+; MoLaCo-EGOR Technology Diffusion
+; FIXED: Profitability optimization
+; ============================================
+
+globals [
+  current-year
+  faraday-constant
+  g-total-industry-profit
+  g-total-carbon-reduction
+  g-total-glycol-acid-output
+  g-total-hydrogen-output
+  g-social-benefit-index
+  g-total-ga-revenue-saving
+  g-total-h2-revenue-extra
+  g-total-carbon-cost-saving
+  g-total-comprehensive-saving
+]
+
+breed [industrial-firms industrial-firm]
+breed [government-agents government-agent]
+breed [market-agents market-agent]
+
+industrial-firms-own [
+  production-capacity
+  current-density
+  cell-voltage
+  catalyst-lifetime
+  technology-type
+  firm-profit
+  risk-perception
+  adoption-probability
+  revenue-chemicals
+  revenue-hydrogen
+  cost-electricity
+  cost-catalyst
+  cost-opex
+  output-glycol-acid
+  output-hydrogen
+  faraday-efficiency-ga
+  electrode-area
+  profit-traditional
+  profit-egor
+  profit-difference
+  total-reference-firms
+  adopted-reference-firms
+  social-influence-factor
+  annual-carbon-emission
+  ga-revenue-traditional
+  ga-revenue-egor
+  ga-revenue-delta
+  h2-revenue-extra
+  carbon-cost-traditional
+  carbon-cost-egor
+  carbon-cost-delta
+  comprehensive-saving
+]
+
+government-agents-own [
+  gov-electricity-price
+  gov-carbon-tax
+  gov-green-subsidy
+  gov-emission-limit
+  accumulated-tax-revenue
+  accumulated-subsidy-paid
+]
+
+market-agents-own [
+  market-ga-price
+  market-h2-price
+  market-mo-price
+  market-la-price
+  market-co-price
+  total-ga-supply
+  total-h2-supply
+]
+
+; ============================================
+; SETUP
+; ============================================
+to setup
+  clear-all
+  reset-ticks
+  set current-year 0
+  set faraday-constant 96485
+
+  setup-government
+  setup-market
+  setup-industrial-firms
+  setup-information-network
+  update-statistics
+  update-visualization
+end
+
+; ============================================
+; GOVERNMENT
+; ============================================
+to setup-government
+  create-government-agents 1 [
+    setxy -18 18
+    set shape "house"
+    set size 5
+    set color blue
+    set label "GOV"
+    set gov-electricity-price 0.63
+    set gov-carbon-tax carbon-tax
+    set gov-green-subsidy green-subsidy
+    set gov-emission-limit emission-standard
+    set accumulated-tax-revenue 0
+    set accumulated-subsidy-paid 0
+  ]
+end
+
+to adjust-policy
+  ask government-agents [
+    if current-year > 5 [
+      set gov-carbon-tax min list 250 (gov-carbon-tax * 1.025)
+    ]
+    ifelse current-year <= 8 [
+      set gov-green-subsidy min list 0.6 (green-subsidy * (1 + (8 - current-year) * 0.04))
+    ][
+      set gov-green-subsidy max list 0.05 (green-subsidy * 0.75)
+    ]
+    set gov-emission-limit max list 800 (emission-standard * (1 - current-year * 0.025))
+    set carbon-tax gov-carbon-tax
+  ]
+end
+
+; ============================================
+; MARKET
+; ============================================
+to setup-market
+  create-market-agents 1 [
+    setxy 18 18
+    set shape "circle"
+    set size 4
+    set color yellow
+    set label "MKT"
+    set market-ga-price 58.8
+    set market-h2-price 35
+    set market-co-price 555
+    set market-la-price 20.5
+    set market-mo-price 0.534
+    set total-ga-supply 0
+    set total-h2-supply 0
+  ]
+end
+
+to adjust-market
+  ask market-agents [
+    set total-ga-supply sum [output-glycol-acid] of industrial-firms
+    set total-h2-supply sum [output-hydrogen] of industrial-firms
+    set market-ga-price 58.8 + random-float 2 - 1
+    set market-h2-price 35 + random-float 2 - 1
+    set market-mo-price 0.534 * (1 + random-float 0.1 - 0.05)
+    set market-la-price 20.5 * (1 + random-float 0.1 - 0.05)
+    set market-co-price 555 * (1 + random-float 0.1 - 0.05)
+  ]
+end
+
+; ============================================
+; INDUSTRIAL FIRMS - FIXED: Industrial scale
+; ============================================
+to setup-industrial-firms
+  let grid-size sqrt num-firms
+  let spacing 14
+  create-industrial-firms num-firms [
+    let x-pos (who mod grid-size) * spacing - (grid-size * spacing / 2)
+    let y-pos (floor (who / grid-size)) * spacing - (grid-size * spacing / 2)
+    setxy x-pos y-pos
+    set shape "square"
+    set size 2.5
+    set color gray
+    set technology-type "Traditional"
+    
+    ; FIXED: production-capacity = 1-10 (万吨/年) - larger industrial scale
+    set production-capacity 1 + random 9
+    
+    set current-density 0
+    set cell-voltage 0
+    set catalyst-lifetime 0
+    set risk-perception 0.2 + random-float 0.6
+    
+    ; FIXED: Larger electrode area for industrial scale
+    ; 1万吨产能 → 50000 cm² (5 m²)
+    set electrode-area production-capacity * 50000
+    
+    set faraday-efficiency-ga 0
+    set output-glycol-acid 0
+    set output-hydrogen 0
+    set revenue-chemicals 0
+    set revenue-hydrogen 0
+    set cost-electricity 0
+    set cost-catalyst 0
+    set cost-opex 0
+    set firm-profit 0
+    set profit-traditional 0
+    set profit-egor 0
+    set profit-difference 0
+    set total-reference-firms 0
+    set adopted-reference-firms 0
+    set social-influence-factor 0
+    set adoption-probability 0
+    set annual-carbon-emission 0
+    set ga-revenue-traditional 0
+    set ga-revenue-egor 0
+    set ga-revenue-delta 0
+    set h2-revenue-extra 0
+    set carbon-cost-traditional 0
+    set carbon-cost-egor 0
+    set carbon-cost-delta 0
+    set comprehensive-saving 0
+  ]
+end
+
+to setup-information-network
+  ask industrial-firms [
+    set total-reference-firms count other industrial-firms with [distance myself < 16]
+  ]
+end
+
+; ============================================
+; MAIN GO LOOP
+; ============================================
+to go
+  if current-year >= max-years [ stop ]
+  set current-year current-year + 1
+  adjust-policy
+  adjust-market
+  ask industrial-firms with [technology-type = "Traditional"] [
+    calculate-profit-comparison
+    calculate-adoption-probability
+    execute-adoption-decision
+  ]
+  ask industrial-firms [
+    calculate-annual-production
+    calculate-annual-cost
+    calculate-annual-revenue
+    calculate-carbon-emission
+    calculate-net-profit
+    calculate-cost-saving
+    update-social-network
+  ]
+  update-statistics
+  update-visualization
+  tick
+end
+
+; ============================================
+; PROFIT COMPARISON
+; ============================================
+to calculate-profit-comparison
+  set profit-traditional calculate-traditional-profit
+  set profit-egor calculate-egor-profit
+  set profit-difference profit-egor - profit-traditional
+end
+
+to-report calculate-traditional-profit
+  ; FIXED: Larger output for industrial scale
+  let trad-output production-capacity * 7000    ; 7000吨/万吨产能
+  let trad-unit-price 0.7                        ; 0.7万元/吨
+  let trad-revenue trad-output * trad-unit-price / 10000
+  
+  let trad-material production-capacity * 300
+  let trad-energy production-capacity * 450
+  let trad-opex production-capacity * 150
+  
+  let trad-carbon-intensity 2.5
+  let trad-emission trad-output * trad-carbon-intensity
+  let trad-carbon-cost trad-emission * [gov-carbon-tax] of one-of government-agents / 10000
+  let excess max list 0 (trad-emission - [gov-emission-limit] of one-of government-agents)
+  let trad-compliance excess * [gov-carbon-tax] of one-of government-agents * 1.5 / 10000
+  let trad-total-cost trad-material + trad-energy + trad-opex + trad-carbon-cost + trad-compliance
+  report trad-revenue - trad-total-cost
+end
+
+to-report calculate-egor-profit
+  ; FIXED: Higher current density for industrial application
+  let egor-voltage 1.15 + random-float 0.25
+  let egor-current-density 1.0 + random-float 1.0   ; 1.0-2.0 A/cm² (industrial target)
+  let egor-catalyst-life 5
+  let egor-fe-ga faraday-efficiency                  ; 0.85-0.95 from slider
+  let egor-fe-h2 0.15
+  
+  let op-hours 8000
+  let mm-ga 76
+  let mm-h2 2
+  let electrons-num 2
+  let cf (op-hours * 3600) / (electrons-num * faraday-constant * 1000000)
+  
+  ; Calculate outputs
+  let ga-output (egor-current-density * electrode-area * mm-ga * egor-fe-ga * cf)
+  let h2-output (egor-current-density * electrode-area * mm-h2 * egor-fe-h2 * cf)
+  
+  ; Revenue
+  let chem-revenue ga-output * [market-ga-price] of one-of market-agents / 1000
+  let h2-revenue h2-output * [market-h2-price] of one-of market-agents / 1000
+  let total-revenue chem-revenue + h2-revenue
+  
+  ; Electricity cost
+  let power-kw (egor-voltage * egor-current-density * electrode-area / 1000)
+  let annual-kwh power-kw * op-hours
+  let elec-cost annual-kwh * [gov-electricity-price] of one-of government-agents / 10000
+  
+  ; Catalyst cost
+  let mo-fraction 7 / 211
+  let la-fraction 4 / 211
+  let co-fraction 200 / 211
+  
+  let cat-loading 2.0
+  let mo-p [market-mo-price] of one-of market-agents
+  let la-p [market-la-price] of one-of market-agents
+  let co-p [market-co-price] of one-of market-agents
+  
+  let cat-mass-g cat-loading * electrode-area / 1000
+  let cat-mass-kg cat-mass-g / 1000
+  
+  let mo-cost cat-mass-kg * mo-fraction * mo-p
+  let la-cost cat-mass-kg * la-fraction * la-p
+  let co-cost cat-mass-kg * co-fraction * co-p
+  let total-material-cost-yuan mo-cost + la-cost + co-cost
+  
+  let annual-replacement-frequency 1 / egor-catalyst-life
+  let cat-cost total-material-cost-yuan * annual-replacement-frequency / 10000
+  
+  ; FIXED: Opex based on actual output, not capacity
+  ; Industrial scale: 0.3万元/吨产品
+  let opex-cost (ga-output + h2-output) * 0.3
+  
+  ; Carbon cost
+  let egor-carbon-intensity 0.1
+  let total-output ga-output + h2-output
+  let egor-emission total-output * egor-carbon-intensity
+  let egor-carbon-cost egor-emission * [gov-carbon-tax] of one-of government-agents / 10000
+  let excess-egor max list 0 (egor-emission - [gov-emission-limit] of one-of government-agents)
+  let egor-compliance excess-egor * [gov-carbon-tax] of one-of government-agents * 0.3 / 10000
+  
+  ; Subsidy
+  let subsidy-rate [gov-green-subsidy] of one-of government-agents
+  let subsidy-received total-revenue * subsidy-rate
+  
+  let total-cost elec-cost + cat-cost + opex-cost + egor-carbon-cost + egor-compliance
+  report total-revenue - total-cost + subsidy-received
+end
+
+; ============================================
+; COST SAVING
+; ============================================
+to calculate-cost-saving
+  ifelse technology-type = "EGOR" [
+    let trad-ga-output production-capacity * 7000
+    let trad-ga-price 0.7
+    set ga-revenue-traditional trad-ga-output * trad-ga-price / 10000
+    set ga-revenue-egor output-glycol-acid * [market-ga-price] of one-of market-agents / 1000
+    set ga-revenue-delta ga-revenue-egor - ga-revenue-traditional
+    set h2-revenue-extra output-hydrogen * [market-h2-price] of one-of market-agents / 1000
+    
+    let trad-emission trad-ga-output * 2.5
+    set carbon-cost-traditional trad-emission * [gov-carbon-tax] of one-of government-agents / 10000
+    let egor-emission-total (output-glycol-acid + output-hydrogen) * 0.1
+    set carbon-cost-egor egor-emission-total * [gov-carbon-tax] of one-of government-agents / 10000
+    set carbon-cost-delta carbon-cost-traditional - carbon-cost-egor
+    set comprehensive-saving ga-revenue-delta + h2-revenue-extra + carbon-cost-delta
+  ][
+    set ga-revenue-traditional 0
+    set ga-revenue-egor 0
+    set ga-revenue-delta 0
+    set h2-revenue-extra 0
+    set carbon-cost-traditional 0
+    set carbon-cost-egor 0
+    set carbon-cost-delta 0
+    set comprehensive-saving 0
+  ]
+end
+
+; ============================================
+; ADOPTION
+; ============================================
+to calculate-adoption-probability
+  let alpha tech-sensitivity * (1 - risk-perception * 0.3)
+  let beta social-weight
+  if total-reference-firms > 0 [
+    set social-influence-factor adopted-reference-firms / total-reference-firms
+  ]
+  let normalized-delta profit-difference / 100
+  let exponent (-1 * alpha * (normalized-delta + beta * social-influence-factor))
+  let logistic-prob 1 / (1 + exp exponent)
+  set adoption-probability 0.02 + logistic-prob * 0.88
+  if adoption-probability > 0.95 [ set adoption-probability 0.95 ]
+  if adoption-probability < 0.005 [ set adoption-probability 0.005 ]
+end
+
+to execute-adoption-decision
+  if random-float 1 < adoption-probability [
+    adopt-egor-technology
+  ]
+end
+
+to adopt-egor-technology
+  set technology-type "EGOR"
+  set color green
+  set size 3
+  set shape "square"
+  set cell-voltage 1.2 + random-float 0.2
+  set current-density 1.0 + random-float 1.0   ; 1.0-2.0 A/cm²
+  set catalyst-lifetime 5
+  set faraday-efficiency-ga faraday-efficiency
+end
+
+; ============================================
+; ANNUAL OPERATIONS
+; ============================================
+to calculate-annual-production
+  ifelse technology-type = "EGOR" [
+    let op-hours 8000
+    let mm-ga 76
+    let mm-h2 2
+    let electrons-num 2
+    let cf (op-hours * 3600) / (electrons-num * faraday-constant * 1000000)
+    
+    let effective-current-density max list 0.5 current-density
+    let effective-faraday-efficiency max list 0.5 faraday-efficiency-ga
+    
+    set output-glycol-acid max list 10 (effective-current-density * electrode-area * mm-ga * effective-faraday-efficiency * cf)
+    set output-hydrogen max list 1 (effective-current-density * electrode-area * mm-h2 * 0.15 * cf)
+  ][
+    set output-glycol-acid production-capacity * 7000
+    set output-hydrogen 0
+  ]
+end
+
+to calculate-annual-cost
+  ifelse technology-type = "EGOR" [
+    let power-kw (cell-voltage * current-density * electrode-area / 1000)
+    let annual-kwh power-kw * 8000
+    set cost-electricity annual-kwh * [gov-electricity-price] of one-of government-agents / 10000
+    
+    let mo-fraction 7 / 211
+    let la-fraction 4 / 211
+    let co-fraction 200 / 211
+    
+    let cat-loading 2.0
+    let mo-p [market-mo-price] of one-of market-agents
+    let la-p [market-la-price] of one-of market-agents
+    let co-p [market-co-price] of one-of market-agents
+    
+    let cat-mass-g cat-loading * electrode-area / 1000
+    let cat-mass-kg cat-mass-g / 1000
+    
+    let mo-cost cat-mass-kg * mo-fraction * mo-p
+    let la-cost cat-mass-kg * la-fraction * la-p
+    let co-cost cat-mass-kg * co-fraction * co-p
+    let total-material-cost-yuan mo-cost + la-cost + co-cost
+    
+    set cost-catalyst total-material-cost-yuan * 0.2 / 10000
+    
+    ; FIXED: Opex based on actual output
+    set cost-opex (output-glycol-acid + output-hydrogen) * 0.3
+  ][
+    set cost-electricity production-capacity * 300
+    set cost-catalyst production-capacity * 2
+    set cost-opex production-capacity * 150
+  ]
+end
+
+to calculate-annual-revenue
+  ifelse technology-type = "EGOR" [
+    set revenue-chemicals output-glycol-acid * [market-ga-price] of one-of market-agents / 1000
+    set revenue-hydrogen output-hydrogen * [market-h2-price] of one-of market-agents / 1000
+  ][
+    set revenue-chemicals output-glycol-acid * 0.7 / 1000
+    set revenue-hydrogen 0
+  ]
+end
+
+to calculate-carbon-emission
+  ifelse technology-type = "EGOR" [
+    set annual-carbon-emission (output-glycol-acid + output-hydrogen) * 0.1
+  ][
+    set annual-carbon-emission output-glycol-acid * 2.5
+  ]
+end
+
+to calculate-net-profit
+  let total-revenue revenue-chemicals + revenue-hydrogen
+  let total-cost cost-electricity + cost-catalyst + cost-opex
+  let carbon-cost annual-carbon-emission * [gov-carbon-tax] of one-of government-agents / 10000
+  let subsidy 0
+  if technology-type = "EGOR" [
+    set subsidy total-revenue * [gov-green-subsidy] of one-of government-agents
+  ]
+  set firm-profit total-revenue - total-cost - carbon-cost + subsidy
+end
+
+to update-social-network
+  set adopted-reference-firms count other industrial-firms with [
+    distance myself < 16 and technology-type = "EGOR"
+  ]
+  if total-reference-firms > 0 [
+    set social-influence-factor adopted-reference-firms / total-reference-firms
+  ]
+end
+
+; ============================================
+; STATISTICS
+; ============================================
+to update-statistics
+  let total-firms count industrial-firms
+  let egor-firms count industrial-firms with [technology-type = "EGOR"]
+  
+  set g-total-industry-profit sum [firm-profit] of industrial-firms
+  let current-emission sum [annual-carbon-emission] of industrial-firms
+  let hypothetical-emission sum [output-glycol-acid * 2.5] of industrial-firms
+  set g-total-carbon-reduction hypothetical-emission - current-emission
+  set g-total-glycol-acid-output sum [output-glycol-acid] of industrial-firms
+  set g-total-hydrogen-output sum [output-hydrogen] of industrial-firms
+  
+  set g-total-ga-revenue-saving sum [ga-revenue-delta] of industrial-firms
+  set g-total-h2-revenue-extra sum [h2-revenue-extra] of industrial-firms
+  set g-total-carbon-cost-saving sum [carbon-cost-delta] of industrial-firms
+  set g-total-comprehensive-saving sum [comprehensive-saving] of industrial-firms
+  
+  let econ-index g-total-industry-profit / 500
+  let env-index g-total-carbon-reduction / 1000
+  let soc-index (g-total-glycol-acid-output / 100) + (g-total-hydrogen-output / 20)
+  set g-social-benefit-index (econ-index * 0.40 + env-index * 0.35 + soc-index * 0.25)
+  
+  ask government-agents [
+    let current-carbon-tax gov-carbon-tax
+    let current-subsidy-rate gov-green-subsidy
+    set accumulated-tax-revenue sum [annual-carbon-emission * current-carbon-tax / 10000] of industrial-firms
+    set accumulated-subsidy-paid sum [(revenue-chemicals + revenue-hydrogen) * current-subsidy-rate] of industrial-firms with [technology-type = "EGOR"]
+  ]
+end
+
+; ============================================
+; VISUALIZATION
+; ============================================
+to update-visualization
+  ask industrial-firms [
+    ifelse technology-type = "EGOR" [
+      set color green
+      set size 2.5 + sqrt max list 0 firm-profit / 5
+    ][
+      set color gray
+      set size 2.5
+    ]
+  ]
+  clear-links
+  ask industrial-firms with [technology-type = "EGOR"] [
+    create-links-with other industrial-firms with [
+      distance myself < 16 and technology-type = "EGOR"
+    ] [
+      set color green - 2
+      set thickness 0.3
+    ]
+  ]
+end
+
+; ============================================
+; REPORTERS
+; ============================================
+to-report report-adoption-rate
+  let total count industrial-firms
+  let adopted count industrial-firms with [technology-type = "EGOR"]
+  ifelse total > 0 [ report (adopted / total) * 100 ][ report 0 ]
+end
+
+to-report report-avg-profit
+  ifelse any? industrial-firms [ report mean [firm-profit] of industrial-firms ][ report 0 ]
+end
+
+to-report report-total-carbon-reduction
+  report g-total-carbon-reduction
+end
+
+to-report report-total-glycol-acid
+  report g-total-glycol-acid-output
+end
+
+to-report report-total-hydrogen
+  report g-total-hydrogen-output
+end
+
+to-report report-social-benefit-index
+  report g-social-benefit-index
+end
+
+to-report report-ga-revenue-saving
+  report g-total-ga-revenue-saving
+end
+
+to-report report-h2-revenue-extra
+  report g-total-h2-revenue-extra
+end
+
+to-report report-carbon-cost-saving
+  report g-total-carbon-cost-saving
+end
+
+to-report report-comprehensive-saving
+  report g-total-comprehensive-saving
+end
